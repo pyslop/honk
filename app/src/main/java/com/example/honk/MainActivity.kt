@@ -22,9 +22,7 @@ class MainActivity : AppCompatActivity() {
     private var soundPool: SoundPool? = null
     private var honkSoundId = 0
     private var currentStreamId = 0
-    private var lastVolume = 1.0f
-    private var lastRate = 1.0f
-    private val FADE_DURATION = 300L  // milliseconds
+    private var isPlaying = false
     
     // Sound modulation ranges
     private val minRate = 0.5f
@@ -136,38 +134,29 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startHonk(v: android.view.View, event: MotionEvent) {
+        if (isPlaying) {
+            soundPool?.stop(currentStreamId)
+        }
+        
         v.isPressed = true
         val (volume, rate) = calculateSoundParameters(v, event)
-        lastVolume = volume
-        lastRate = rate
         currentStreamId = soundPool?.play(honkSoundId, volume, volume, 1, -1, rate) ?: 0
+        isPlaying = true
     }
 
     private fun updateHonk(v: android.view.View, event: MotionEvent) {
+        if (!isPlaying) return
         val (volume, rate) = calculateSoundParameters(v, event)
-        lastVolume = volume
-        lastRate = rate
         soundPool?.setVolume(currentStreamId, volume, volume)
         soundPool?.setRate(currentStreamId, rate)
     }
 
     private fun stopHonk() {
-        // Start fade-out animation
-        ValueAnimator.ofFloat(1.0f, 0.0f).apply {
-            duration = FADE_DURATION
-            interpolator = LinearInterpolator()
-            addUpdateListener { animation ->
-                val value = animation.animatedValue as Float
-                soundPool?.setVolume(currentStreamId, lastVolume * value, lastVolume * value)
-            }
-            start()
-        }
-
-        // Stop the sound after fade-out
-        Handler(Looper.getMainLooper()).postDelayed({
-            soundPool?.stop(currentStreamId)
-            currentStreamId = 0
-        }, FADE_DURATION)
+        if (!isPlaying) return
+        
+        soundPool?.stop(currentStreamId)
+        currentStreamId = 0
+        isPlaying = false
     }
 
     private fun calculateSoundParameters(v: android.view.View, event: MotionEvent): Pair<Float, Float> {
@@ -184,6 +173,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onDestroy() {
         super.onDestroy()
+        if (isPlaying) {
+            soundPool?.stop(currentStreamId)
+        }
         soundPool?.release()
         soundPool = null
         scaleDownAnimator?.cancel()
