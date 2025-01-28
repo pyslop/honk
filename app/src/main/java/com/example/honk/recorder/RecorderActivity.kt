@@ -160,19 +160,37 @@ class RecorderActivity : AppCompatActivity() {
 
             recorder = MediaRecorder().apply {
                 try {
-                    setAudioSource(MediaRecorder.AudioSource.VOICE_COMMUNICATION)  // Better gain than CAMCORDER
+                    setAudioSource(MediaRecorder.AudioSource.VOICE_RECOGNITION)  // Better noise reduction
                     setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
                     setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
                     setAudioChannels(1)
                     setAudioSamplingRate(44100)
-                    setAudioEncodingBitRate(320000)  // Increased to 320kbps for better quality
+                    setAudioEncodingBitRate(320000)
                     setOutputFile(recordingFile!!.absolutePath)
                     
                     prepare()
-                    start()
-                    isRecording = true
-                    startAmplitudeMonitoring()
-                    Log.d("RecorderActivity", "Recording started with voice optimization")
+                    
+                    // Add a small delay after prepare() to let the audio system stabilize
+                    lifecycleScope.launch(Dispatchers.IO) {
+                        try {
+                            // 100ms delay seems to work well
+                            kotlinx.coroutines.delay(100)
+                            withContext(Dispatchers.Main) {
+                                if (recorder != null) {  // Check if recording wasn't cancelled
+                                    start()
+                                    isRecording = true
+                                    startAmplitudeMonitoring()
+                                    Log.d("RecorderActivity", "Recording started after initialization delay")
+                                }
+                            }
+                        } catch (e: Exception) {
+                            Log.e("RecorderActivity", "Error starting recorder after delay", e)
+                            withContext(Dispatchers.Main) {
+                                cleanup()
+                                showErrorDialog("Recording Error", "Failed to start recording: ${e.message}")
+                            }
+                        }
+                    }
                 } catch (e: Exception) {
                     Log.e("RecorderActivity", "Error configuring recorder", e)
                     showErrorDialog("Recording Error", "Failed to start recording: ${e.message}")
