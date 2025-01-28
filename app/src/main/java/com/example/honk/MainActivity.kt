@@ -8,10 +8,16 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.view.MotionEvent
+import android.view.MenuItem
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.widget.AppCompatImageButton
+import androidx.appcompat.widget.Toolbar
+import androidx.drawerlayout.widget.DrawerLayout
+import com.google.android.material.navigation.NavigationView
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var drawerLayout: DrawerLayout
+    private var currentSoundResourceId = R.raw.honk_sound
     private var soundPool: SoundPool? = null
     private var honkSoundId = 0
     private var currentStreamId = 0
@@ -29,9 +35,37 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        setupToolbarAndDrawer()
         initializeSoundPool()
-        
-        val honkButton = findViewById<AppCompatImageButton>(R.id.honkButton)
+        setupHonkButton()
+    }
+
+    private fun setupToolbarAndDrawer() {
+        val toolbar: Toolbar = findViewById(R.id.toolbar)
+        setSupportActionBar(toolbar)
+        supportActionBar?.setDisplayHomeAsUpEnabled(true)
+        supportActionBar?.setHomeAsUpIndicator(R.drawable.ic_menu)
+
+        drawerLayout = findViewById(R.id.drawerLayout)
+        val navigationView: NavigationView = findViewById(R.id.navView)
+        navigationView.setNavigationItemSelectedListener { menuItem ->
+            when (menuItem.itemId) {
+                R.id.sound_goose -> currentSoundResourceId = R.raw.honk_sound
+                R.id.sound_duck -> currentSoundResourceId = R.raw.duck_sound
+                R.id.sound_trumpet -> currentSoundResourceId = R.raw.trumpet_sound
+            }
+            // Reload sound
+            soundPool?.unload(honkSoundId)
+            honkSoundId = soundPool?.load(this, currentSoundResourceId, 1) ?: 0
+            
+            menuItem.isChecked = true
+            drawerLayout.closeDrawers()
+            true
+        }
+    }
+
+    private fun setupHonkButton() {
+        val honkButton: AppCompatImageButton = findViewById(R.id.honkButton)
         honkButton.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
@@ -50,6 +84,14 @@ class MainActivity : AppCompatActivity() {
                 else -> false
             }
         }
+    }
+
+    override fun onOptionsItemSelected(item: MenuItem): Boolean {
+        if (item.itemId == android.R.id.home) {
+            drawerLayout.open()
+            return true
+        }
+        return super.onOptionsItemSelected(item)
     }
 
     private fun initializeSoundPool() {
