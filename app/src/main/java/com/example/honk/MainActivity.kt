@@ -15,6 +15,7 @@ import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
 import android.animation.ObjectAnimator
+import android.view.ViewConfiguration
 
 class MainActivity : AppCompatActivity() {
     private lateinit var drawerLayout: DrawerLayout
@@ -71,6 +72,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupHonkButton() {
         val honkButton: AppCompatImageButton = findViewById(R.id.honkButton)
+        val edgeSlop = ViewConfiguration.get(this).scaledEdgeSlop
         
         // Create scale animators
         scaleDownAnimator = ObjectAnimator.ofFloat(honkButton, "scaleX", SCALE_NORMAL, SCALE_PRESSED).apply {
@@ -88,6 +90,13 @@ class MainActivity : AppCompatActivity() {
         }
 
         honkButton.setOnTouchListener { v, event ->
+            // Ignore touches that start from screen edges
+            if (event.action == MotionEvent.ACTION_DOWN && 
+                (event.x <= edgeSlop || event.x >= v.width - edgeSlop ||
+                 event.y <= edgeSlop || event.y >= v.height - edgeSlop)) {
+                return@setOnTouchListener false
+            }
+
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     scaleUpAnimator?.cancel()
