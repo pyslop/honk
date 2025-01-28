@@ -308,13 +308,26 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun calculateSoundParameters(v: android.view.View, event: MotionEvent): Pair<Float, Float> {
-        // Normalize x and y coordinates to 0-1 range
-        val normalizedX = (event.x / v.width).coerceIn(0f, 1f)
-        val normalizedY = (1 - event.y / v.height).coerceIn(0f, 1f) // Invert Y for intuitive control
-
-        // Map normalized values to sound parameters
-        val rate = normalizedX * (maxRate - minRate) + minRate
-        val volume = normalizedY * (maxVolume - minVolume) + minVolume
+        // Calculate distance from center of button
+        val centerX = v.width / 2f
+        val centerY = v.height / 2f
+        val touchX = event.x
+        val touchY = event.y
+        
+        // Convert to -1 to 1 range relative to center
+        val normalizedX = ((touchX - centerX) / (v.width / 2f)).coerceIn(-1f, 1f)
+        val normalizedY = ((centerY - touchY) / (v.height / 2f)).coerceIn(-1f, 1f)  // Invert Y for intuitive control
+        
+        // Rate calculation: center (0,0) = normal rate (1.0)
+        // Left = slow (0.5), Right = fast (2.0)
+        val rate = if (normalizedX >= 0) {
+            1.0f + normalizedX * (maxRate - 1.0f)
+        } else {
+            1.0f + normalizedX * (1.0f - minRate)
+        }
+        
+        // Volume increases as you move upward from center
+        val volume = ((normalizedY + 1f) / 2f) * (maxVolume - minVolume) + minVolume
 
         return Pair(volume, rate)
     }
