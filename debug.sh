@@ -73,9 +73,22 @@ echo -e "\nDevice ready!"
 echo "Installing app..."
 adb install -r app/build/outputs/apk/debug/app-debug.apk
 
-echo "Launching app..."
+echo "Launching app and streaming logs..."
 adb shell am start -n "com.example.honk/.MainActivity"
-echo "Press Ctrl+C to stop the emulator"
-read -r -d '' _ </dev/tty
 
-echo "Emulator stopped"
+# Stream only our app's logs with debug level and higher
+adb logcat -s "com.example.honk:*" "*:E" | grep com.example.honk &
+LOGCAT_PID=$!
+
+# Update cleanup function to kill logcat
+cleanup() {
+    echo "Cleaning up..."
+    kill $LOGCAT_PID 2>/dev/null
+    adb emu kill >/dev/null 2>&1
+}
+
+# Enable cleanup on script exit
+trap cleanup EXIT
+
+# Wait for logcat process
+wait $LOGCAT_PID
