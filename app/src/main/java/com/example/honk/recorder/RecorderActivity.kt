@@ -36,6 +36,7 @@ import android.view.animation.AnimationUtils
 class RecorderActivity : AppCompatActivity() {
     private var recorder: MediaRecorder? = null
     private var recordingFile: File? = null
+    private var tempRecordingFile: File? = null
     private var isRecording = false
     private lateinit var db: AppDatabase
     private lateinit var adapter: RecordingAdapter
@@ -152,11 +153,11 @@ class RecorderActivity : AppCompatActivity() {
         try {
             val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date())
             val fileName = "RECORD_$timestamp.3gp"
-            recordingFile = File(getExternalFilesDir(null), fileName)
+            tempRecordingFile = File(getExternalFilesDir(null), fileName)
             // Ensure directory exists
-            recordingFile?.parentFile?.mkdirs()
+            tempRecordingFile?.parentFile?.mkdirs()
             
-            Log.d("RecorderActivity", "Starting recording to: ${recordingFile?.absolutePath}")
+            Log.d("RecorderActivity", "Starting recording to: ${tempRecordingFile?.absolutePath}")
 
             recorder = MediaRecorder().apply {
                 try {
@@ -166,7 +167,7 @@ class RecorderActivity : AppCompatActivity() {
                     setAudioChannels(1)
                     setAudioSamplingRate(44100)
                     setAudioEncodingBitRate(320000)
-                    setOutputFile(recordingFile!!.absolutePath)
+                    setOutputFile(tempRecordingFile!!.absolutePath)
                     
                     prepare()
                     
@@ -231,7 +232,7 @@ class RecorderActivity : AppCompatActivity() {
             Log.d("RecorderActivity", "Stopping recording")
             
             // Save file path and stop recording
-            val finalRecordingFile = recordingFile
+            recordingFile = tempRecordingFile
             
             try {
                 recorder?.apply {
@@ -248,7 +249,7 @@ class RecorderActivity : AppCompatActivity() {
             }
 
             // Make sure file exists before proceeding
-            if (finalRecordingFile == null || !finalRecordingFile.exists()) {
+            if (recordingFile == null || !recordingFile!!.exists()) {
                 Log.e("RecorderActivity", "Recording file missing")
                 cleanup()
                 return
@@ -367,11 +368,10 @@ class RecorderActivity : AppCompatActivity() {
                     Log.d("RecorderActivity", "Saving recording at: ${file.absolutePath}")
                     db.customSoundDao().insert(sound)
                     isRecordingSaved = true
-                    
-                    // Verify file is still there after save
-                    if (!file.exists()) {
-                        throw IOException("File disappeared after saving")
-                    }
+
+                    // Clear the file references after successful save
+                    recordingFile = null
+                    tempRecordingFile = null
                     
                     finish()
                 } catch (e: Exception) {
@@ -445,6 +445,7 @@ class RecorderActivity : AppCompatActivity() {
                 }
             }
             recorder = null
+            tempRecordingFile = null  // Clear temp file reference
             
             // Clear animations
             findViewById<View>(R.id.recordButton)?.clearAnimation()
@@ -468,7 +469,9 @@ class RecorderActivity : AppCompatActivity() {
         // Only delete the file if it wasn't saved successfully
         if (!isRecordingSaved) {
             recordingFile?.delete()
+            tempRecordingFile?.delete()
         }
         recordingFile = null
+        tempRecordingFile = null
     }
 }
