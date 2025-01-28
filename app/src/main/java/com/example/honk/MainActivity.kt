@@ -258,12 +258,12 @@ class MainActivity : AppCompatActivity() {
 
     private fun initializeSoundPool() {
         val attributes = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_MEDIA)  // Changed from GAME to MEDIA
-            .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)  // Changed from SONIFICATION to MUSIC
+            .setUsage(AudioAttributes.USAGE_GAME)  // Changed back to GAME for lower latency
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)  // Changed back to SONIFICATION
             .build()
 
         soundPool = SoundPool.Builder()
-            .setMaxStreams(4)  // Increased from 1
+            .setMaxStreams(4)
             .setAudioAttributes(attributes)
             .build()
 
@@ -276,16 +276,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun startHonk(v: android.view.View, event: MotionEvent) {
         if (isPlaying) {
-            Log.d("MainActivity", "Stopping previous sound")
             soundPool?.stop(currentStreamId)
         }
         
         v.isPressed = true
         val (volume, rate) = calculateSoundParameters(v, event)
-        // Boost volume for custom sounds
         val boostedVolume = if (currentCustomSoundPath != null) volume * 2f else volume
-        Log.d("MainActivity", "Playing sound (ID: $honkSoundId) with volume: $boostedVolume, rate: $rate")
-        currentStreamId = soundPool?.play(honkSoundId, boostedVolume, boostedVolume, 2, 0, rate) ?: 0
+        currentStreamId = soundPool?.play(honkSoundId, boostedVolume, boostedVolume, 2, -1, rate) ?: 0  // Added -1 for looping
         Log.d("MainActivity", "Started playing with stream ID: $currentStreamId")
         isPlaying = true
     }
