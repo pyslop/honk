@@ -30,6 +30,8 @@ import java.io.File
 import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
+import android.animation.ObjectAnimator
+import android.view.animation.AnimationUtils
 
 class RecorderActivity : AppCompatActivity() {
     private var recorder: MediaRecorder? = null
@@ -104,16 +106,39 @@ class RecorderActivity : AppCompatActivity() {
 
     private fun setupRecordButton() {
         val recordButton = findViewById<View>(R.id.recordButton)
+        val scaleAnimation = AnimationUtils.loadAnimation(this, R.anim.record_button_scale)
+        
         recordButton?.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startRecording()
-                    window.decorView.setBackgroundColor(0x22FF0000) // Red tint while recording
+                    // Start pulsating animation
+                    recordButton.startAnimation(scaleAnimation)
+                    // Add red tint with animation
+                    ObjectAnimator.ofArgb(
+                        window.decorView,
+                        "backgroundColor",
+                        0x00000000,
+                        0x33FF0000
+                    ).apply {
+                        duration = 300
+                        start()
+                    }
                     true
                 }
                 MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
                     stopRecording()
-                    window.decorView.setBackgroundColor(0x00000000) // Clear tint
+                    // Clear animations
+                    recordButton.clearAnimation()
+                    ObjectAnimator.ofArgb(
+                        window.decorView,
+                        "backgroundColor",
+                        0x33FF0000,
+                        0x00000000
+                    ).apply {
+                        duration = 300
+                        start()
+                    }
                     true
                 }
                 else -> false
@@ -402,7 +427,18 @@ class RecorderActivity : AppCompatActivity() {
                 }
             }
             recorder = null
-            window.decorView.setBackgroundColor(0x00000000)
+            
+            // Clear animations
+            findViewById<View>(R.id.recordButton)?.clearAnimation()
+            ObjectAnimator.ofArgb(
+                window.decorView,
+                "backgroundColor",
+                0x33FF0000,
+                0x00000000
+            ).apply {
+                duration = 300
+                start()
+            }
             
             // Don't delete the recording file here anymore, let it be handled by saveRecording or dialog dismissal
         } catch (e: Exception) {
