@@ -23,7 +23,7 @@
             android:id="@+id/honkButton"
             android:layout_width="0dp"
             android:layout_height="0dp"
-            android:src="@drawable/goose_icon"
+            android:src="@drawable/push_button"
             android:scaleType="fitCenter"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:soundEffectsEnabled="false"

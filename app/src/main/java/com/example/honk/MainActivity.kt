@@ -14,6 +14,7 @@ import androidx.appcompat.widget.AppCompatImageButton
 import androidx.appcompat.widget.Toolbar
 import androidx.drawerlayout.widget.DrawerLayout
 import com.google.android.material.navigation.NavigationView
+import android.animation.ObjectAnimator
 
 class MainActivity : AppCompatActivity() {
     private lateinit var drawerLayout: DrawerLayout
@@ -30,6 +31,12 @@ class MainActivity : AppCompatActivity() {
     private val maxRate = 2.0f
     private val minVolume = 0.2f
     private val maxVolume = 1.0f
+
+    private val SCALE_PRESSED = 0.95f
+    private val SCALE_NORMAL = 1.0f
+    private val SCALE_ANIMATION_DURATION = 100L
+    private var scaleDownAnimator: ObjectAnimator? = null
+    private var scaleUpAnimator: ObjectAnimator? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -66,9 +73,27 @@ class MainActivity : AppCompatActivity() {
 
     private fun setupHonkButton() {
         val honkButton: AppCompatImageButton = findViewById(R.id.honkButton)
+        
+        // Create scale animators
+        scaleDownAnimator = ObjectAnimator.ofFloat(honkButton, "scaleX", SCALE_NORMAL, SCALE_PRESSED).apply {
+            duration = SCALE_ANIMATION_DURATION
+            addUpdateListener { 
+                honkButton.scaleY = honkButton.scaleX
+            }
+        }
+        
+        scaleUpAnimator = ObjectAnimator.ofFloat(honkButton, "scaleX", SCALE_PRESSED, SCALE_NORMAL).apply {
+            duration = SCALE_ANIMATION_DURATION
+            addUpdateListener {
+                honkButton.scaleY = honkButton.scaleX
+            }
+        }
+
         honkButton.setOnTouchListener { v, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    scaleUpAnimator?.cancel()
+                    scaleDownAnimator?.start()
                     startHonk(v, event)
                     true
                 }
@@ -77,6 +102,8 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
+                    scaleDownAnimator?.cancel()
+                    scaleUpAnimator?.start()
                     stopHonk()
                     v.isPressed = false
                     true
@@ -159,5 +186,7 @@ class MainActivity : AppCompatActivity() {
         super.onDestroy()
         soundPool?.release()
         soundPool = null
+        scaleDownAnimator?.cancel()
+        scaleUpAnimator?.cancel()
     }
 }
