@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <group android:checkableBehavior="single">
+    <group
+        android:id="@+id/group_default_sounds"
+        android:checkableBehavior="single">
         <item
             android:id="@+id/sound_goose"
             android:title="Goose Honk"
-            android:checked="true"/>
+            android:checked="true" />
         <item
             android:id="@+id/sound_duck"
-            android:title="Duck Quack"/>
+            android:title="Duck Quack" />
         <item
             android:id="@+id/sound_trumpet"
-            android:title="Trumpet"/>
+            android:title="Trumpet" />
+    </group>
+
+    <group
+        android:id="@+id/group_custom_sounds"
+        android:checkableBehavior="single">
+        <!-- Custom sounds will be added here dynamically -->
     </group>
 </menu>
